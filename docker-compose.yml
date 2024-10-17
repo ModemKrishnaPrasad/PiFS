@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  backend:
+    image: pifs-backend:dev
+    container_name: pifs-backend
+    privileged: true
+    ports:
+      - "5000:5000"
+    volumes:
+      - "/:/host"   # Mounts the host filesystem
+    environment:
+      - NODE_ENV=development
+
+  frontend:
+    image: pifs-frontend:dev
+    container_name: pifs-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=development
+

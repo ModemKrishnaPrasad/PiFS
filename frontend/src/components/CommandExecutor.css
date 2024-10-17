@@ -1,0 +1,59 @@
+.command-executor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px; /* Limit the maximum width */
+    margin: 20px auto; /* Center the component */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.header {
+    color: #333;
+    margin-bottom: 15px; /* Space below the header */
+}
+
+.command-input {
+    width: 100%; /* Full width */
+    padding: 10px;
+    font-size: 16px; /* Slightly larger font size */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s; /* Smooth transition */
+}
+
+.command-input:focus {
+    border-color: #007bff; /* Change border color on focus */
+}
+
+.execute-button {
+    padding: 10px 20px;
+    background-color: #007bff; /* Button color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px; /* Space above the button */
+    transition: background-color 0.3s; /* Smooth transition */
+}
+
+.execute-button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+
+.output {
+    width: 100%; /* Full width */
+    padding: 10px;
+    margin-top: 20px; /* Space above the output */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f1f1f1; /* Light grey background */
+    white-space: pre-wrap; /* Preserve whitespace */
+    overflow-x: auto; /* Horizontal scrolling if necessary */
+    font-family: 'Courier New', Courier, monospace; /* Monospace font for command output */
+    color: #333; /* Text color */
+}
