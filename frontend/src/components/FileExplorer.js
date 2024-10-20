@@ -62,8 +62,8 @@ const styles = {
     border: '1px solid #ccc',
     backgroundColor: '#f9f9f9',
     boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-    maxWidth: '600px',
-    margin: 'auto',
+    width: '100%',  // Occupy full width
+    margin: '20px 0',  // Add margin to give it some spacing
   },
   heading: {
     textAlign: 'center',
@@ -77,7 +77,7 @@ const styles = {
   fileItem: {
     padding: '10px',
     margin: '5px 0',
-    border: '2px solid transparent', // Default transparent border for spacing
+    border: '2px solid transparent',
     borderRadius: '4px',
     cursor: 'pointer',
     transition: 'border-color 0.3s, background-color 0.3s',

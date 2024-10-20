@@ -2,24 +2,70 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser'); // To handle JSON body in POST request
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = 5000;
-const cors = require('cors');
+
 app.use(cors());
-// Middleware to handle JSON request bodies
 app.use(bodyParser.json());
 
-// Middleware to handle CORS (optional)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
+// Secret for JWT
+const JWT_SECRET = 'your_jwt_secret';
+
+// In-memory users list (in a production app, use a database)
+const users = [];
+
+// Middleware to protect routes
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization'];
+  if (!token) return res.status(403).send('Token required');
+
+  const bearerToken = token.split(' ')[1];
+  jwt.verify(bearerToken, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).send('Invalid token');
+    req.user = user;
+    next();
+  });
+};
+
+// Route for user registration
+app.post('/api/register', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).send('Username and password required');
+  }
+
+  // Hash the password
+  const hashedPassword = await bcrypt.hash(password, 10);
+  users.push({ username, password: hashedPassword });
+
+  res.status(201).send('User registered');
 });
 
-// Route to list files and directories
-app.get('/api/files', (req, res) => {
-  const directoryPath = req.query.path || '/'; 
+// Route for user login
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find(u => u.username === username);
+  if (!user) return res.status(400).send('Invalid username or password');
+
+  // Validate password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) return res.status(400).send('Invalid username or password');
+
+  // Generate JWT token
+  const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+  res.json({ token });
+});
+
+// Now protect your existing routes with the authentication middleware
+
+// Route to list files and directories (protected)
+app.get('/api/files', authenticateToken, (req, res) => {
+  const directoryPath = req.query.path || '/';
 
   fs.readdir(directoryPath, { withFileTypes: true }, (err, files) => {
     if (err) {
@@ -35,8 +81,8 @@ app.get('/api/files', (req, res) => {
   });
 });
 
-// Route to read a file
-app.get('/api/files/read', (req, res) => {
+// Route to read a file (protected)
+app.get('/api/files/read', authenticateToken, (req, res) => {
   const filePath = req.query.path;
 
   fs.readFile(filePath, 'utf8', (err, data) => {
@@ -47,8 +93,8 @@ app.get('/api/files/read', (req, res) => {
   });
 });
 
-// Route to modify and save a file
-app.post('/api/files/write', (req, res) => {
+// Other routes (modify, create, delete files/directories) can be similarly protected
+app.post('/api/files/write', authenticateToken, (req, res) => {
   const { path: filePath, content } = req.body;
 
   if (!filePath || !content) {
@@ -63,8 +109,8 @@ app.post('/api/files/write', (req, res) => {
   });
 });
 
-// Route to delete a file
-app.delete('/api/files/delete', (req, res) => {
+// Route to delete a file (protected)
+app.delete('/api/files/delete', authenticateToken, (req, res) => {
   const filePath = req.query.path;
 
   if (!filePath) {
@@ -79,92 +125,34 @@ app.delete('/api/files/delete', (req, res) => {
   });
 });
 
-// Route to create a new directory
-app.post('/api/files/create-directory', (req, res) => {
-  const directoryPath = req.body.path;
-
-  if (!directoryPath) {
-    return res.status(400).json({ error: 'Directory path is required' });
-  }
-
-  fs.mkdir(directoryPath, { recursive: true }, (err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to create directory', details: err.message });
-    }
-    res.json({ message: 'Directory created successfully' });
-  });
-});
-
-// Route to create a new file
-app.post('/api/files/create-file', (req, res) => {
-  const { path: filePath, content } = req.body;
-
-  if (!filePath) {
-    return res.status(400).json({ error: 'File path is required' });
-  }
-
-  // If no content is provided, default to an empty file
-  const fileContent = content || '';
-
-  // Write the new file with content
-  fs.writeFile(filePath, fileContent, 'utf8', (err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to create file', details: err.message });
-    }
-    res.json({ message: 'File successfully created' });
-  });
-});
-
-// Route to delete a directory
-app.delete('/api/files/delete-directory', (req, res) => {
-  const directoryPath = req.query.path;
-
-  if (!directoryPath) {
-    return res.status(400).json({ error: 'Directory path is required' });
-  }
-
-  // Remove the directory and its content recursively
-  fs.rm(directoryPath, { recursive: true, force: true }, (err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to delete directory', details: err.message });
-    }
-    res.json({ message: 'Directory successfully deleted' });
-  });
-});
-
-const { exec } = require('child_process');
-
-app.post('/api/execute', (req, res) => {
+// Route to execute shell commands (protected)
+app.post('/api/execute', authenticateToken, (req, res) => {
   const command = req.body.command;
-  
+
   exec(`chroot / ${command}`, (error, stdout, stderr) => {
-      if (error) {
-          return res.status(500).send(stderr);
-      }
-      res.send(stdout);
+    if (error) {
+      return res.status(500).send(stderr);
+    }
+    res.send(stdout);
   });
 });
 
-app.get('/api/download', (req, res) => {
+// Route to download a file (protected)
+app.get('/api/download', authenticateToken, (req, res) => {
   const filePath = req.query.path;
 
   if (!filePath) {
     return res.status(400).send('File path is required.');
   }
 
-  // Adjust the base path according to your directory structure
   const fullPath = path.join(filePath);
-  console.log('Full Path:', fullPath); // Log to verify the resolved path
-
   fs.access(fullPath, fs.constants.F_OK, (err) => {
     if (err) {
-      console.error('File not found error:', err);
       return res.status(404).send('File not found.');
     }
 
     res.download(fullPath, (downloadError) => {
       if (downloadError) {
-        console.error('Download error:', downloadError);
         return res.status(500).send('Error downloading file.');
       }
     });

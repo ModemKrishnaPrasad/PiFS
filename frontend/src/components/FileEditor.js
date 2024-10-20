@@ -1,8 +1,7 @@
-// src/components/FileEditor.js
 import React, { useState, useEffect } from 'react';
 import { readFile, writeFile } from '../utils/api';
 
-const FileEditor = ({ filePath }) => {
+const FileEditor = ({ filePath, onClose }) => {
   const [content, setContent] = useState('');
 
   useEffect(() => {
@@ -25,6 +24,7 @@ const FileEditor = ({ filePath }) => {
     writeFile(filePath, content)
       .then(() => {
         alert('File saved successfully');
+        onClose(); // Close the modal after saving if desired
       })
       .catch(error => {
         console.error('Error saving file:', error);
@@ -43,6 +43,7 @@ const FileEditor = ({ filePath }) => {
       />
       <br />
       <button onClick={handleSave} style={styles.button}>Save</button>
+      <button style={styles.closeButton} onClick={onClose}>X</button> {/* Close button here */}
     </div>
   );
 };
@@ -53,29 +54,29 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     width: '100%',
-    maxWidth: '800px', // Limit the maximum width for better readability
-    margin: '20px auto', // Center the editor with margin
+    maxWidth: '800px',
+    margin: '20px auto',
     padding: '20px',
     backgroundColor: '#ffffff',
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    border: '1px solid #e0e0e0', // Add a subtle border
+    border: '1px solid #e0e0e0',
   },
   header: {
     marginBottom: '15px',
     color: '#333',
   },
   textarea: {
-    width: '100%', // Full width
+    width: '100%',
     height: '300px',
-    fontSize: '14px', // Reduced text size
+    fontSize: '14px',
     padding: '10px',
     borderRadius: '5px',
     border: '1px solid #ccc',
     outline: 'none',
-    resize: 'vertical', // Allow vertical resizing
-    backgroundColor: '#f5f5f5', // Light background for the textarea
-    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.1)', // Subtle inset shadow
+    resize: 'vertical',
+    backgroundColor: '#f5f5f5',
+    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.1)',
   },
   button: {
     marginTop: '15px',
@@ -85,7 +86,14 @@ const styles = {
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
-    transition: 'background-color 0.3s', // Smooth transition for hover
+    transition: 'background-color 0.3s',
+  },
+  closeButton: {
+    marginTop: '10px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '18px',
   },
   message: {
     textAlign: 'center',
