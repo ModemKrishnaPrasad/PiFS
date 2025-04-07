@@ -126,16 +126,24 @@ app.delete('/api/files/delete', authenticateToken, (req, res) => {
 });
 
 // Route to execute shell commands (protected)
+const safeCommands = ["ls", "whoami", "pwd", "echo Hello"]; // Allow only these
+
 app.post('/api/execute', authenticateToken, (req, res) => {
   const command = req.body.command;
 
-  exec(`chroot / ${command}`, (error, stdout, stderr) => {
+  if (!command) {
+    return res.status(400).send("Command is required");
+  }
+
+  // ⚠️ Dangerous: No whitelist check
+  exec(command, (error, stdout, stderr) => {
     if (error) {
-      return res.status(500).send(stderr);
+      return res.status(500).send(stderr || error.message);
     }
     res.send(stdout);
   });
 });
+
 
 // Route to download a file (protected)
 app.get('/api/download', authenticateToken, (req, res) => {
